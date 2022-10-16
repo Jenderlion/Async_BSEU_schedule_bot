@@ -1,0 +1,9 @@
+aiogram==2.22.2
+aiohttp==3.8.3
+APScheduler==3.9.1
+fastapi==0.85.1
+lxml==4.9.1
+python-dotenv==0.21.0
+requests==2.28.1
+SQLAlchemy==1.4.41
+uvicorn==0.18.3
