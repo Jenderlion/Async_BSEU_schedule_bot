@@ -7,8 +7,7 @@ from keyboards.inline import *
 from keyboards.reply import *
 from database.methods.select import get_user
 from database.main import User
-from misc.async_utils import send_broadcast
-
+from misc.async_utils import send_broadcast, schedule_request
 
 logger = logging.getLogger('BSEU Schedule')
 
@@ -71,11 +70,41 @@ async def command_debug(message: types.Message):
 async def command_broadcast(message: types.Message):
     if message.from_id != 449808966:
         logger.warning(f'User @{message.from_user.username} (id {message.from_id}) trying to broadcast!!!')
+        await message.reply('Я не знаю такой команды :(', reply_markup=menu_keyboard())
         return None
     message_tuple = message.text.split()
     broadcast_text = ' '.join(message_tuple[1:])
     await send_broadcast(broadcast_text)
     await message.reply('Sent!')
+
+
+@log
+async def command_user(message: types.Message):
+    if message.from_id != 449808966:
+        logger.warning(f'User @{message.from_user.username} (id {message.from_id}) trying to get user info!!!')
+        await message.reply('Я не знаю такой команды :(', reply_markup=menu_keyboard())
+        return None
+    message_tuple = message.text.split()
+    user_id = message_tuple[1]
+    user = get_user(user_id)
+    text = f'User @{user.tg_user_name} ({user.tg_user_id}), mailing: {user.mailing}\n' \
+           f'Faculty {user.b_faculty}, form {user.b_form}, course {user.b_course}, group {user.b_group}\n' \
+           f'Tuple: {user.b_faculty}, {user.b_form}, {user.b_course}, {user.b_group}'
+    await message.answer(text)
+
+
+@log
+async def command_fake(message: types.Message):
+    if message.from_id != 449808966:
+        logger.warning(f'User @{message.from_user.username} (id {message.from_id}) trying to get fake info!!!')
+        await message.reply('Я не знаю такой команды :(', reply_markup=menu_keyboard())
+        return None
+    message_tuple = message.text.split()
+    try:
+        faculty, form, course, group, period = message_tuple[1:]
+        await schedule_request(User(b_faculty=faculty, b_form=form, b_course=course, b_group=group), message, period)
+    except ValueError:
+        await message.reply('/fake {faculty} {form} {course} {group} {period=1,2,3}')
 
 
 @log
@@ -94,4 +123,6 @@ def register_user_handlers(dp: Dispatcher):
     dp.register_message_handler(command_schedule, commands=('schedule',))
     dp.register_message_handler(command_settings, commands=('settings',))
     dp.register_message_handler(command_broadcast, commands=('broadcast',))
+    dp.register_message_handler(command_user, commands=('user',))
+    dp.register_message_handler(command_fake, commands=('fake',))
     dp.register_message_handler(command__)

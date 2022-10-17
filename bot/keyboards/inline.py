@@ -1,4 +1,3 @@
-import aiohttp
 import requests
 from lxml import html
 from functools import cache
@@ -106,6 +105,7 @@ def inline_markup_settings(user: User) -> InlineKeyboardMarkup:
 def inline_markup_help() -> InlineKeyboardMarkup:
     keyboard = InlineKeyboardMarkup()
     keyboard.row(InlineKeyboardButton('Связаться с администратором', callback_data='help request'))
+    keyboard.row(InlineKeyboardButton('Сказать "Спасибо"', callback_data='help thanks'))
     return keyboard
 
 

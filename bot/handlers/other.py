@@ -10,6 +10,8 @@ from keyboards.inline import inline_markup_add_group_info
 from keyboards.inline import inline_markup_credentials
 
 
+logger = logging.getLogger('BSEU Schedule')
+
 @error_log
 async def error_handler(*args, ** kwargs):
     tg_bot = BotInstanceContainer().bot
@@ -91,7 +93,7 @@ async def callback_settings(*args, **kwargs):
         case 'cancel':
             pass
         case _:
-            await bot_message.answer('От тебя приходят странные данные. Ты пытаешься их поменять?')
+            await bot_message.answer('От тебя приходят странные данные. Ты их не менял?')
 
 
 @callback_wrapper
@@ -110,6 +112,20 @@ async def callback_help(*args, **kwargs):
             )
         case 'credentials':
             await tg_bot.send_message(callback_tuple[2], 'Администратор просит Вас связаться с ним\n\n@jenderlion')
+        case 'thanks':
+            await bot_message.answer('Поблагодарить создателя можно следующими способами:')
+            try:
+                with open('img/oplati_qr.png', 'rb') as opened_file:
+                    await tg_bot.send_photo(callback.from_user.id, opened_file, 'Через приложение "Оплати" по QR-коду:')
+            except Exception as exc:
+                logger.error(exc)
+                logger.error(traceback.format_exc())
+            await bot_message.answer('Через кошельки:\n\n'
+                                     'USDT/USDC (сеть <u>TRC20</u>): TFCmqwoMLc6wn7JByk3zsVyrUo7yN5okK3\n'
+                                     'ETH (сеть <u>ERC20</u>): 0x6b4c1924fb6d8d0d1d919357bdc7f6952ee753d6\n'
+                                     'BTC (сеть <u>Bitcoin</u>): 3LgofPSzhWPGY89MxVmfS555S6qRi3PhHZ')
+        case _:
+            await bot_message.answer('От тебя приходят странные данные. Ты их не менял?')
 
 
 def register_other_handlers(dp: Dispatcher) -> None:

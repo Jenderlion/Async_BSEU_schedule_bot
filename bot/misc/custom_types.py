@@ -1,7 +1,12 @@
 import json
 import datetime
+import logging
+import traceback
 
 from aiogram import Bot
+
+
+logger = logging.getLogger('BSEU Schedule')
 
 
 class Path:
@@ -98,33 +103,40 @@ class BotInstanceContainer:
 class ScheduleLesson:
 
     def __init__(self, lesson_list: list):
-        __time = lesson_list.pop(0)
-        self.time_string = __time[__time.find('">') + 2:__time.find('</td')]
+        try:
+            __time = lesson_list.pop(0)
+            self.time_string = __time[__time.find('">') + 2:__time.find('</td')]
 
-        if len(lesson_list) > 3:
-            __name_data = lesson_list.pop(0)
-            lesson_list.pop(0)  # empty item
-            __subgroup = lesson_list.pop(0)
-            __teacher = lesson_list.pop(0)
-            __place = lesson_list.pop(0)
+            if len(lesson_list) > 3:
+                __name_data = lesson_list.pop(0)
+                lesson_list.pop(0)  # empty item
+                __subgroup = lesson_list.pop(0)
+                __teacher = lesson_list.pop(0)
+                __place = lesson_list.pop(0)
 
-            self.name = __name_data[__name_data.find('">') + 2:__name_data.find('<span')].strip()
-            self.data = __name_data[__name_data.find('distype">') + 9:__name_data.find('</span')].strip()
-            self.teacher = __teacher[__teacher.find('teacher">') + 9:__teacher.find('</span></td>')].strip()
-            self.place = __place[__place.find('">') + 2:__place.find('<')]
-            self.subgroup = __subgroup[__subgroup.find('">') + 2:__subgroup.find('</td')]
-        else:
-            __name_data_t = lesson_list.pop(0)
-            __place = lesson_list.pop(0)
+                self.name = __name_data[__name_data.find('">') + 2:__name_data.find('<span')].strip()
+                self.data = __name_data[__name_data.find('distype">') + 9:__name_data.find('</span')].strip()
+                self.teacher = __teacher[__teacher.find('teacher">') + 9:__teacher.find('</span></td>')].strip()
+                self.place = __place[__place.find('">') + 2:__place.find('<')]
+                self.subgroup = __subgroup[__subgroup.find('">') + 2:__subgroup.find('</td')]
+            else:
+                __name_data_t = lesson_list.pop(0)
+                __place = lesson_list.pop(0)
 
-            self.name = __name_data_t[__name_data_t.find('">') + 2:__name_data_t.find('<span')].strip()
-            self.data = __name_data_t[__name_data_t.find('distype">') + 9:__name_data_t.find('</span')].strip()
-            self.teacher = __name_data_t[__name_data_t.find('teacher">') + 9:__name_data_t.find('</span></td>')].strip()
-            self.place = __place[__place.find('">') + 2:__place.find('</td')]
-            self.subgroup = 'вся группа'
+                self.name = __name_data_t[__name_data_t.find('">') + 2:__name_data_t.find('<span')].strip()
+                self.data = __name_data_t[__name_data_t.find('distype">') + 9:__name_data_t.find('</span')].strip()
+                self.teacher = __name_data_t[__name_data_t.find('teacher">') + 9:__name_data_t.find('</span></td>')]\
+                    .strip()
+                self.place = __place[__place.find('">') + 2:__place.find('</td')]
+                self.subgroup = 'вся группа'
 
-        if '<strong>' in self.data:
-            self.data = f'({self.data[9:-10]})'
+            if '<strong>' in self.data:
+                self.data = f'({self.data[9:-10]})'
+
+            self.is_full = True
+        except Exception as exc:
+            logger.error(exc)
+            logger.error(traceback.format_exc())
 
     def __repr__(self):
         _str = f'<ScheduleLesson> {self.name} {self.data} {self.subgroup} at {self.time_string} in {self.place}' \
@@ -138,12 +150,18 @@ class ScheduleLesson:
 
 class ScheduleDay:
 
-    def __init__(self, day_list: list):
-        __row_date = day_list.pop(0)
-        __row_date = __row_date[__row_date.find('wday') + 6:__row_date.find('</td>')]
-        self.week_day, __date = __row_date.split()
-        _d, _m, _y = __date[1:-1].split('.')
-        self.date = datetime.datetime(year=int(_y), month=int(_m), day=int(_d))
+    def __init__(self, day_list: list, period: str):
+        self.bad_schedule = '\n<td>'.join(day_list)
+        self.__parse_period = period
+        if self.__parse_period != '1':
+            __row_date = day_list.pop(0)
+            __row_date = __row_date[__row_date.find('wday') + 6:__row_date.find('</td>')]
+            self.week_day, __date = __row_date.split()
+            _d, _m, _y = __date[1:-1].split('.')
+            self.date = datetime.datetime(year=int(_y), month=int(_m), day=int(_d))
+        else:
+            self.date = datetime.datetime.now()
+            self.week_day = 'сегодня'
         temp_list = []
         lessons_list = []
         for item in day_list:
@@ -166,7 +184,8 @@ class ScheduleDay:
 
 class ScheduleTable:
 
-    def __init__(self, input_html_table: str):
+    def __init__(self, input_html_table: str, period: str):
+        self.__parse_period = period
         self.__row_cells = input_html_table.split('<tr>')
         self.__row_cells.pop(0)
         title = self.__row_cells.pop(0)
@@ -181,7 +200,7 @@ class ScheduleTable:
             temp_list.append(item)
         if len(temp_list) > 0:
             day_list.append(temp_list)
-        self.days: list[ScheduleDay] = [ScheduleDay(day) for day in day_list if len(day) > 0]
+        self.days: list[ScheduleDay] = [ScheduleDay(day, period) for day in day_list if len(day) > 0]
 
     def __repr__(self):
         return f'<ScheduleTable> Days: {len(self.days)}'
