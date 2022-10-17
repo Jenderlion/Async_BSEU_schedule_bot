@@ -5,6 +5,7 @@ from database.methods.update import update_one_user_group_info
 from database.methods.update import delete_user_group_info
 from misc.decorators import *
 from misc.custom_types import BotInstanceContainer
+from misc.custom_types import Path
 from misc.async_utils import schedule_request
 from keyboards.inline import inline_markup_add_group_info
 from keyboards.inline import inline_markup_credentials
@@ -115,7 +116,10 @@ async def callback_help(*args, **kwargs):
         case 'thanks':
             await bot_message.answer('Поблагодарить создателя можно следующими способами:')
             try:
-                with open('img/oplati_qr.png', 'rb') as opened_file:
+                abs_file_path = os.path.abspath(__file__)
+                current_file_path, filename = os.path.split(abs_file_path)
+                oplati_path = Path(current_file_path) - 1 + 'img' + 'oplati_qr.png'
+                with open(str(oplati_path), 'rb') as opened_file:
                     await tg_bot.send_photo(callback.from_user.id, opened_file, 'Через приложение "Оплати" по QR-коду:')
             except Exception as exc:
                 logger.error(exc)
