@@ -5,6 +5,7 @@ from misc.custom_types import ScheduleTable
 from database.methods.select import get_users
 from database.main import User
 from keyboards.reply import menu_keyboard
+from asyncio.exceptions import TimeoutError as AsyncTimeoutError
 import aiohttp
 
 
@@ -26,22 +27,27 @@ async def schedule_request(user: User, message: Message, period: str = '3'):
                              ' Воспользуйся командой /settings, чтобы поделиться со мной.')
         return None
     timeout = aiohttp.ClientTimeout(total=30)
-    async with aiohttp.ClientSession(timeout=timeout) as web_client:
-        body = user.request_body()
-        body['period'] = period
-        resp = await web_client.post(request_url, headers=user.request_headers(), data=body)
-        result = await resp.text()
-    if 'Расписание не найдено' in result or 'Для получения расписания занятий' in result:
+    try:
+        async with aiohttp.ClientSession(timeout=timeout) as web_client:
+            body = user.request_body()
+            body['period'] = period
+            resp = await web_client.post(request_url, headers=user.request_headers(), data=body)
+            result = await resp.text()
+        if 'Расписание не найдено' in result or 'Для получения расписания занятий' in result:
+            await message.answer(
+                'Расписание не найдено. Если ты уверен, что оно должно быть, обнови данные о своей группе в /settings'
+            )
+            return None
+        print(result)
+        __table = result[result.find('<tr>'):]
+        __table = __table[:__table.find('</table')]
+        table = ScheduleTable(__table)
+        for day in table.days:
+            answer_text_list = [f'Расписание на {day.pretty_date()}, {day.week_day} (всего занятий: {len(day.lessons)})', ]
+            for lesson in day.lessons:
+                answer_text_list.append(lesson.pretty_lesson())
+            await message.answer('\n\n'.join(answer_text_list))
+    except AsyncTimeoutError:
         await message.answer(
-            'Расписание не найдено. Если ты уверен, что оно должно быть, обнови данные о своей группе в /settings'
-        )
-        return None
-    print(result)
-    __table = result[result.find('<tr>'):]
-    __table = __table[:__table.find('</table')]
-    table = ScheduleTable(__table)
-    for day in table.days:
-        answer_text_list = [f'Расписание на {day.pretty_date()}, {day.week_day} (всего занятий: {len(day.lessons)})', ]
-        for lesson in day.lessons:
-            answer_text_list.append(lesson.pretty_lesson())
-        await message.answer('\n\n'.join(answer_text_list))
+            'Сайт БГЭУ опять лёг. Попробуй добавить свою группу чуть позже. Если ты можешь зайти на'
+            ' http://bseu.by/schedule/, а я — нет, то свяжись с администратором через /help')

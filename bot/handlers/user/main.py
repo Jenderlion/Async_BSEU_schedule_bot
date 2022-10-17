@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram import Dispatcher
 
 from misc.decorators import *
@@ -21,8 +23,8 @@ async def command_start(message: types.Message, user: User):
         return None
     answer_text = 'Привет! У тебя нет информации о группе. Сейчас добавим!\n\nКогда закончишь, напиши /help :)'
     await message.answer(answer_text, reply_markup=menu_keyboard())
+    await asyncio.sleep(2)
     text, markup = inline_markup_add_group_info(user)
-
     await message.answer(text, reply_markup=markup)
 
 

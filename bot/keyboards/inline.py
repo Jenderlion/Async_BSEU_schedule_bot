@@ -1,3 +1,4 @@
+import aiohttp
 import requests
 from lxml import html
 from functools import cache
@@ -22,54 +23,58 @@ def inline_markup_add_group_info(user: User) -> tuple[str, InlineKeyboardMarkup]
     headers = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; rv:11.0) Gecko/20100101 Firefox/11.0'}
 
-    if user.b_faculty is None:
-        resp = requests.get('http://bseu.by/schedule/')
-        html_mash = html.fromstring(resp.content)
-        answer = html_mash.xpath('//*[@id="faculty"]//option')
-        faculties = [(item.values()[0], item.text) for item in answer if item.text != ' ']
-        text = 'Выбери факультет:'
+    try:
+        if user.b_faculty is None:
+            resp = requests.get('http://bseu.by/schedule/', timeout=5)
+            html_mash = html.fromstring(resp.content)
+            answer = html_mash.xpath('//*[@id="faculty"]//option')
+            faculties = [(item.values()[0], item.text) for item in answer if item.text != ' ']
+            text = 'Выбери факультет:'
 
-        for faculty in faculties:
-            buttons.append(InlineKeyboardButton(faculty[1], callback_data=f'group_info b_faculty {faculty[0]}'))
+            for faculty in faculties:
+                buttons.append(InlineKeyboardButton(faculty[1], callback_data=f'group_info b_faculty {faculty[0]}'))
 
-    elif user.b_form is None:
-        data['faculty'] = user.b_faculty
-        data['__act'] = '__id.22.main.inpFldsA.GetForms'
-        resp = requests.post('http://bseu.by/schedule/', data=data, headers=headers)
-        answer = eval(resp.text)
-        forms = [(item["value"], item["text"]) for item in answer if item['text'] != 'выберите...']
-        text = 'Выбери форму обучения:'
+        elif user.b_form is None:
+            data['faculty'] = user.b_faculty
+            data['__act'] = '__id.22.main.inpFldsA.GetForms'
+            resp = requests.post('http://bseu.by/schedule/', data=data, headers=headers, timeout=5)
+            answer = eval(resp.text)
+            forms = [(item["value"], item["text"]) for item in answer if item['text'] != 'выберите...']
+            text = 'Выбери форму обучения:'
 
-        for form in forms:
-            buttons.append(InlineKeyboardButton(form[1], callback_data=f'group_info b_form {form[0]}'))
+            for form in forms:
+                buttons.append(InlineKeyboardButton(form[1], callback_data=f'group_info b_form {form[0]}'))
 
-    elif user.b_course is None:
-        data['faculty'] = user.b_faculty
-        data['form'] = user.b_form
-        data['__act'] = '__id.23.main.inpFldsA.GetCourse'
-        resp = requests.post('http://bseu.by/schedule/', data=data, headers=headers)
-        answer = eval(resp.text)
-        courses = [(item["value"], item["text"]) for item in answer if item['text'] != 'выберите...']
-        text = 'Выбери курс:'
+        elif user.b_course is None:
+            data['faculty'] = user.b_faculty
+            data['form'] = user.b_form
+            data['__act'] = '__id.23.main.inpFldsA.GetCourse'
+            resp = requests.post('http://bseu.by/schedule/', data=data, headers=headers, timeout=5)
+            answer = eval(resp.text)
+            courses = [(item["value"], item["text"]) for item in answer if item['text'] != 'выберите...']
+            text = 'Выбери курс:'
 
-        for course in courses:
-            buttons.append(InlineKeyboardButton(course[1], callback_data=f'group_info b_course {course[0]}'))
+            for course in courses:
+                buttons.append(InlineKeyboardButton(course[1], callback_data=f'group_info b_course {course[0]}'))
 
-    elif user.b_group is None:
-        data['faculty'] = user.b_faculty
-        data['form'] = user.b_form
-        data['course'] = user.b_course
-        data['__act'] = '__id.23.main.inpFldsA.GetGroups'
-        resp = requests.post('http://bseu.by/schedule/', data=data, headers=headers)
-        answer = eval(resp.text)
-        groups = [(item["value"], item["text"]) for item in answer if item['text'] != 'выберите...']
-        text = 'Выбери группу:'
+        elif user.b_group is None:
+            data['faculty'] = user.b_faculty
+            data['form'] = user.b_form
+            data['course'] = user.b_course
+            data['__act'] = '__id.23.main.inpFldsA.GetGroups'
+            resp = requests.post('http://bseu.by/schedule/', data=data, headers=headers, timeout=5)
+            answer = eval(resp.text)
+            groups = [(item["value"], item["text"]) for item in answer if item['text'] != 'выберите...']
+            text = 'Выбери группу:'
 
-        for group in groups:
-            buttons.append(InlineKeyboardButton(group[1], callback_data=f'group_info b_group {group[0]}'))
+            for group in groups:
+                buttons.append(InlineKeyboardButton(group[1], callback_data=f'group_info b_group {group[0]}'))
 
-    else:
-        text = 'Все данные о твоей группе у меня есть :)'
+        else:
+            text = 'Все данные о твоей группе у меня есть :)'
+    except requests.exceptions.ReadTimeout:
+        text = 'Сайт БГЭУ опять лёг. Попробуй добавить свою группу чуть позже. Если ты можешь зайти на' \
+               ' http://bseu.by/schedule/, а я — нет, то свяжись с администратором через /help'
 
     for button in buttons:
         keyboard.row(button)
