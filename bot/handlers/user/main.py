@@ -121,10 +121,10 @@ async def command_reboot(message: types.Message):
         if len(message_tuple) == 2:
             if message_tuple[1] in ('c', 'cancel'):
                 os.system(f'shutdown -c')
-                await message.answer('Reboot!')
+                await message.answer('Reboot canceled!')
             elif message_tuple[1].isdigit():
                 os.system(f'shutdown -r {message_tuple[1]}')
-                await message.answer(f'Reboot in {message_tuple[1]} seconds!')
+                await message.answer(f'Reboot in {message_tuple[1]} minutes!')
         elif len(message_tuple) == 1:
             os.system(f'shutdown -r')
             await message.answer('Reboot!')
