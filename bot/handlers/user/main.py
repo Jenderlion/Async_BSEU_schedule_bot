@@ -131,7 +131,7 @@ async def command_reboot(message: types.Message):
         else:
             await message.reply('Invalid argument(s)')
     else:
-        await message.answer('Dev mode')
+        await message.answer('In dev mode')
 
 
 @log
