@@ -1,4 +1,6 @@
 import asyncio
+import os
+import sys
 
 from aiogram import Dispatcher
 from aiogram.dispatcher.filters import Text
@@ -109,6 +111,30 @@ async def command_fake(message: types.Message):
 
 
 @log
+async def command_reboot(message: types.Message):
+    if message.from_id != 449808966:
+        logger.warning(f'User @{message.from_user.username} (id {message.from_id}) trying to reboot!!!')
+        await message.reply('Я не знаю такой команды :(', reply_markup=menu_keyboard())
+        return None
+    if sys.platform != 'win32':
+        message_tuple = message.text.split()
+        if len(message_tuple) == 2:
+            if message_tuple[1] in ('c', 'cancel'):
+                os.system(f'shutdown -c')
+                await message.answer('Reboot!')
+            elif message_tuple[1].isdigit():
+                os.system(f'shutdown -r {message_tuple[1]}')
+                await message.answer(f'Reboot in {message_tuple[1]} seconds!')
+        elif len(message_tuple) == 1:
+            os.system(f'shutdown -r')
+            await message.answer('Reboot!')
+        else:
+            await message.reply('Invalid argument(s)')
+    else:
+        await message.answer('Dev mode')
+
+
+@log
 @time_wrapper(1)
 async def command__(message: types.Message):
     logger.debug(
@@ -132,4 +158,5 @@ def register_user_handlers(dp: Dispatcher):
     dp.register_message_handler(command_broadcast, commands=('broadcast',))
     dp.register_message_handler(command_user, commands=('user',))
     dp.register_message_handler(command_fake, commands=('fake',))
+    dp.register_message_handler(command_reboot, commands=('reboot',))
     dp.register_message_handler(command__)
