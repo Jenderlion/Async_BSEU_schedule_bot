@@ -3,7 +3,7 @@ from aiogram.types import ReplyKeyboardMarkup
 
 def menu_keyboard() -> ReplyKeyboardMarkup:
     keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.row('/schedule')
-    keyboard.row('/settings')
-    keyboard.row('/help')
+    keyboard.row('Расписание')
+    keyboard.row('Настройки')
+    keyboard.row('Помощь')
     return keyboard
