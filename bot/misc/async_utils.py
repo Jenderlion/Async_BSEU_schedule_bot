@@ -1,12 +1,8 @@
 import asyncio
 import os
 import sys
-import traceback
-import soundfile as sf
-import speech_recognition as sr
 
-from pydub import AudioSegment
-from pydub.silence import split_on_silence
+import speech_recognition as sr
 
 from aiogram.utils.exceptions import CantParseEntities
 from aiogram.utils.exceptions import ChatNotFound
