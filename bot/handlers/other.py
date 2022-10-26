@@ -144,7 +144,11 @@ async def callback_help(*args, **kwargs):
 
 def register_other_handlers(dp: Dispatcher) -> None:
 
-    dp.register_message_handler(voice_handler, content_types=(types.ContentType.VOICE,))
+    dp.register_message_handler(
+        voice_handler,
+        content_types=(types.ContentType.VOICE,),
+        chat_type=(types.ChatType.GROUP, types.ChatType.SUPERGROUP)
+    )
 
     dp.register_errors_handler(error_handler)
 

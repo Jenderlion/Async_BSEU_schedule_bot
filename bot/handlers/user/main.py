@@ -159,4 +159,4 @@ def register_user_handlers(dp: Dispatcher):
     dp.register_message_handler(command_user, commands=('user',))
     dp.register_message_handler(command_fake, commands=('fake',))
     dp.register_message_handler(command_reboot, commands=('reboot',))
-    dp.register_message_handler(command__)
+    dp.register_message_handler(command__, content_types=('command',))
