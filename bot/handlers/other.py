@@ -7,11 +7,21 @@ from misc.decorators import *
 from misc.custom_types import BotInstanceContainer
 from misc.custom_types import Path
 from misc.async_utils import schedule_request
+from misc.async_utils import voice_handler as v_h
 from keyboards.inline import inline_markup_add_group_info
 from keyboards.inline import inline_markup_credentials
 
 
 logger = logging.getLogger('BSEU Schedule')
+
+
+@log
+async def voice_handler(message: types.Message):
+    tg_bot = BotInstanceContainer().bot
+    voice_file = await message.voice.get_file()
+    text = await v_h(voice_file)
+    await message.reply(text)
+
 
 @error_log
 async def error_handler(*args, ** kwargs):
@@ -133,6 +143,8 @@ async def callback_help(*args, **kwargs):
 
 
 def register_other_handlers(dp: Dispatcher) -> None:
+
+    dp.register_message_handler(voice_handler, content_types=(types.ContentType.VOICE,))
 
     dp.register_errors_handler(error_handler)
 

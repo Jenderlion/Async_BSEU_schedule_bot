@@ -1,9 +1,18 @@
+import asyncio
+import os
+import sys
 import traceback
+import soundfile as sf
+import speech_recognition as sr
+
+from pydub import AudioSegment
+from pydub.silence import split_on_silence
 
 from aiogram.utils.exceptions import CantParseEntities
 from aiogram.utils.exceptions import ChatNotFound
 from aiogram.types import Message
-from misc.custom_types import BotInstanceContainer
+from aiogram.types.file import File
+from misc.custom_types import BotInstanceContainer, Path
 from misc.custom_types import ScheduleTable
 from database.methods.select import get_users
 from database.main import User
@@ -21,6 +30,8 @@ async def send_broadcast(broadcast_text: str):
             await tg_bot.send_message(__chat_id, broadcast_text, reply_markup=menu_keyboard())
         except ChatNotFound:
             pass
+        except Exception as exc:
+            await tg_bot.send_message(449808966, str(type(exc)).replace('<', '«').replace('>', '»'))
 
 
 async def schedule_request(user: User, message: Message, period: str = '3'):
@@ -67,3 +78,48 @@ async def schedule_request(user: User, message: Message, period: str = '3'):
         await message.answer(
             'Сайт БГЭУ опять лёг. Попробуй добавить свою группу чуть позже. Если ты можешь зайти на'
             ' http://bseu.by/schedule/, а я — нет, то свяжись с администратором через /help')
+
+
+async def voice_handler(file: File) -> str:
+
+    root_dir = Path.get_root_path()
+    files_dir = root_dir + 'voices'
+
+    if 'voices' not in os.listdir(str(root_dir)):
+        os.mkdir(str(files_dir))
+
+    __size_in_bytes = 0
+    for filename in os.listdir(str(files_dir)):
+        __size_in_bytes += os.path.getsize(f'{files_dir + filename}')
+    __size_in_m_bytes = __size_in_bytes / 1024 / 1024
+
+    while __size_in_m_bytes > 64:
+        file_to_remove = min(
+            [_ for _ in os.listdir(str(files_dir))], key=lambda x: os.path.getctime(f'{files_dir + x}')
+        )
+        __size_in_bytes -= os.path.getsize(str(files_dir + file_to_remove))
+        __size_in_m_bytes = __size_in_bytes / 1024 / 1024
+        os.remove(str(files_dir + file_to_remove))
+
+    tg_bot = BotInstanceContainer().bot
+    file_path = files_dir + str(file.file_unique_id + '.oga')
+    wav_path = file_path - 1
+    wav_path += f'{file.file_unique_id}.wav'
+    await tg_bot.download_file_by_id(file.file_id, destination=str(file_path))
+
+    if sys.platform != 'win32':
+        os.system(f'ffmpeg -i {file_path} {wav_path}')
+    else:
+        wav_path = wav_path - 1
+        wav_path = wav_path + 'AgADLCMAAllIyEo.wav'
+
+    r = sr.Recognizer()
+    try:
+        with sr.AudioFile(str(wav_path)) as source:
+            audio_data = r.record(source)
+            text = r.recognize_google(audio_data, language='ru-RU')
+            text = text.capitalize()
+    except Exception as exc:
+        text = 'Очень интересно, но я ничего не понял'
+
+    return text

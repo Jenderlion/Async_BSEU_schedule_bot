@@ -1,6 +1,8 @@
 """
 Database control module. Part "INSERT"
 """
+
+
 import logging
 
 from database.main import User

@@ -2,6 +2,7 @@ import json
 import datetime
 import logging
 import traceback
+import os
 
 from aiogram import Bot
 
@@ -11,6 +12,7 @@ logger = logging.getLogger('BSEU Schedule')
 
 class Path:
     """Focused class for save path to script"""
+    root_path = None
 
     def __init__(self, raw_path: str):
         self.os = 'Linux' if raw_path[0] == '/' else 'Windows' if raw_path[0].isalpha() else 'Unknown OS'
@@ -61,6 +63,14 @@ class Path:
                 raise ValueError('You are about to return to more directories than the path specified')
         else:
             raise ValueError('You can only take <int> number of directories and files')
+
+    @classmethod
+    def get_root_path(cls):
+        if cls.root_path is None:
+            abs_file_path = os.path.abspath(__file__)
+            current_file_path, filename = os.path.split(abs_file_path)
+            cls.root_path = Path(current_file_path) - 1
+        return cls.root_path
 
 
 class BotTimer:

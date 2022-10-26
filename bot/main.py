@@ -37,7 +37,7 @@ app = FastAPI()
 
 
 # globals
-manual_debug = True
+manual_debug = False
 
 console_args = get_console_args()
 if console_args.verbose:

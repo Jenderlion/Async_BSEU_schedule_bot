@@ -145,7 +145,7 @@ async def command__(message: types.Message):
 
 def register_user_handlers(dp: Dispatcher):
     dp.register_message_handler(command_help, Text(('Помощь', 'помощь')))
-    dp.register_message_handler(command_debug, commands=('debug',))
+    dp.register_message_handler(command_help, commands=('help',))
 
     dp.register_message_handler(command_schedule, commands=('schedule',))
     dp.register_message_handler(command_schedule, Text(('Расписание', 'расписание')))
@@ -154,7 +154,7 @@ def register_user_handlers(dp: Dispatcher):
     dp.register_message_handler(command_settings, Text(('Настройки', 'настройки')))
 
     dp.register_message_handler(command_start, commands=('start',))
-    dp.register_message_handler(command_help, commands=('help',))
+    dp.register_message_handler(command_debug, commands=('debug',))
     dp.register_message_handler(command_broadcast, commands=('broadcast',))
     dp.register_message_handler(command_user, commands=('user',))
     dp.register_message_handler(command_fake, commands=('fake',))
