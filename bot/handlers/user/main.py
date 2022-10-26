@@ -135,6 +135,18 @@ async def command_reboot(message: types.Message):
 
 
 @log
+@time_wrapper(60)
+async def command_admin(message: types.Message):
+    try:
+        await message.answer(
+            "<a href='https://www.youtube.com/watch?v=dQw4w9WgXcQ'>Admin manual</a>", disable_web_page_preview=True
+        )
+    except Exception as exc:
+        print(exc)
+        print(type(exc))
+
+
+@log
 @time_wrapper(1)
 async def command__(message: types.Message):
     logger.debug(
@@ -159,4 +171,5 @@ def register_user_handlers(dp: Dispatcher):
     dp.register_message_handler(command_user, commands=('user',))
     dp.register_message_handler(command_fake, commands=('fake',))
     dp.register_message_handler(command_reboot, commands=('reboot',))
+    dp.register_message_handler(command_admin, commands=('admin',))
     dp.register_message_handler(command__, content_types=('command',))
