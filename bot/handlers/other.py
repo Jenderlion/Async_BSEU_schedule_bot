@@ -130,7 +130,9 @@ async def callback_help(*args, **kwargs):
                 current_file_path, filename = os.path.split(abs_file_path)
                 oplati_path = Path(current_file_path) - 1 + 'img' + 'oplati_qr.png'
                 with open(str(oplati_path), 'rb') as opened_file:
-                    await tg_bot.send_photo(callback.from_user.id, opened_file, 'Через приложение "Оплати" по QR-коду:')
+                    await tg_bot.send_photo(
+                        callback.message.chat.id, opened_file, 'Через приложение "Оплати" по QR-коду:'
+                    )
             except Exception as exc:
                 logger.error(exc)
                 logger.error(traceback.format_exc())
