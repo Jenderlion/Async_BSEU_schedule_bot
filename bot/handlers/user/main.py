@@ -45,7 +45,15 @@ async def command_help(message: types.Message):
 @log
 @time_wrapper(10)
 async def command_schedule(message: types.Message):
-    await message.answer('Выбирай период:', reply_markup=inline_markup_schedule())
+    if message.chat.type == 'private':
+        user = get_user(message.from_id)
+        if user.is_full():
+            await message.answer('Выбирай период:', reply_markup=inline_markup_schedule())
+        else:
+            text, markup = inline_markup_add_group_info(user)
+            await message.answer(text, reply_markup=markup)
+    else:
+        await message.reply('Расписание могу отправить только в личные сообщения. Зайди туда и попробуй ещё раз.')
 
 
 @log
