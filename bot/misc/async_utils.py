@@ -1,11 +1,13 @@
 import asyncio
 import os
+import random
 import sys
 
 import speech_recognition as sr
 
 from aiogram.utils.exceptions import CantParseEntities
 from aiogram.utils.exceptions import ChatNotFound
+from aiogram.utils.exceptions import BotBlocked
 from aiogram.types import Message
 from aiogram.types.file import File
 from misc.custom_types import BotInstanceContainer, Path
@@ -22,12 +24,21 @@ async def send_broadcast(broadcast_text: str):
     __users_with_mailing = get_users(__mailing=True)
     __chat_ids = tuple(user.tg_user_id for user in __users_with_mailing)
     for __chat_id in __chat_ids:
-        try:
-            await tg_bot.send_message(__chat_id, broadcast_text, reply_markup=menu_keyboard())
-        except ChatNotFound:
-            pass
-        except Exception as exc:
-            await tg_bot.send_message(449808966, str(type(exc)).replace('<', '«').replace('>', '»'))
+        _count = 0
+        while _count < 3:
+            _count += 1
+            try:
+                await tg_bot.send_message(__chat_id, broadcast_text, reply_markup=menu_keyboard())
+                break
+            except ChatNotFound:
+                break
+            except BotBlocked:
+                await asyncio.sleep(random.random() * 5)
+            except Exception as exc:
+                await tg_bot.send_message(
+                    449808966, f"C = {_count}\n{str(type(exc)).replace('<', '«').replace('>', '»')}"
+                )
+                break
 
 
 async def schedule_request(user: User, message: Message, period: str = '3'):
