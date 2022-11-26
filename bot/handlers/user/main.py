@@ -1,6 +1,7 @@
 import asyncio
 import os
 import sys
+import types
 
 from aiogram import Dispatcher
 from aiogram.dispatcher.filters import Text
@@ -8,7 +9,8 @@ from aiogram.dispatcher.filters import Text
 from misc.decorators import *
 from keyboards.inline import *
 from keyboards.reply import *
-from database.methods.select import get_user
+from database.methods.select import get_user, get_users
+from database.methods.update import update_user_info
 from database.main import User
 from misc.async_utils import send_broadcast, schedule_request
 
@@ -48,7 +50,8 @@ async def command_schedule(message: types.Message):
     if message.chat.type == 'private':
         user = get_user(message.from_id)
         if user.is_full():
-            await message.answer('Выбирай период:', reply_markup=inline_markup_schedule())
+            _keyboard, _message = inline_markup_schedule(user)
+            await message.answer(f'{_message}\n\nВыбирай период:', reply_markup=_keyboard)
         else:
             text, markup = inline_markup_add_group_info(user)
             await message.answer(text, reply_markup=markup)
@@ -65,6 +68,18 @@ async def command_settings(message: types.Message):
     answer_text_list.append(f'Имя: {user.tg_first_name}\nФамилия: {user.tg_last_name}')
     answer_text_list.append(f'Рассылка: {"включена" if user.mailing else "выключена"}')
     answer_text_list.append(f'Данные о группе: {"присутствуют" if user.is_full() else "отсутствуют"}')
+    _d_dict = {'today': 'на сегодня', 'tomorrow': 'на завтра', 'week': 'на неделю', 'all': 'на семестр'}
+    to_show = []
+    hidden = []
+    for param_name, param_value in json.loads(user.settings).items():
+        if param_value == 1:
+            to_show.append(_d_dict[param_name])
+        else:
+            hidden.append(_d_dict[param_name])
+    if to_show:
+        answer_text_list.append(f'Отображается расписание {", ".join(to_show)}')
+    if hidden:
+        answer_text_list.append(f'Скрыто расписание {", ".join(hidden)}')
     answer_text_list.append(f'Что будем делать?')
     await message.answer('\n\n'.join(answer_text_list), reply_markup=inline_markup_settings(user))
 
@@ -96,11 +111,15 @@ async def command_user(message: types.Message):
         await message.reply('Я не знаю такой команды :(', reply_markup=menu_keyboard())
         return None
     message_tuple = message.text.split()
-    user_id = message_tuple[1]
+    if len(message_tuple) == 1:
+        user_id = message.from_user.id
+    else:
+        user_id = message_tuple[1]
     user = get_user(user_id)
     text = f'User @{user.tg_user_name} ({user.tg_user_id}), mailing: {user.mailing}\n' \
            f'Faculty {user.b_faculty}, form {user.b_form}, course {user.b_course}, group {user.b_group}\n' \
-           f'Tuple: {user.b_faculty}, {user.b_form}, {user.b_course}, {user.b_group}'
+           f'Tuple: {user.b_faculty}, {user.b_form}, {user.b_course}, {user.b_group}\n' \
+           f'Settings: {user.settings}'
     await message.answer(text)
 
 
@@ -143,6 +162,16 @@ async def command_reboot(message: types.Message):
 
 
 @log
+async def command_users(message: types.Message):
+    if message.from_id != 449808966:
+        logger.warning(f'User @{message.from_user.username} (id {message.from_id}) trying to get users list!!!')
+        await message.reply('Я не знаю такой команды :(', reply_markup=menu_keyboard())
+        return None
+    _users = get_users()
+    await message.answer(f'There are {len(_users)} users in the database.')
+
+
+@log
 @time_wrapper(60)
 async def command_admin(message: types.Message):
     try:
@@ -179,5 +208,6 @@ def register_user_handlers(dp: Dispatcher):
     dp.register_message_handler(command_user, commands=('user',))
     dp.register_message_handler(command_fake, commands=('fake',))
     dp.register_message_handler(command_reboot, commands=('reboot',))
+    dp.register_message_handler(command_users, commands=('users',))
     dp.register_message_handler(command_admin, commands=('admin',))
     dp.register_message_handler(command__, content_types=('command',))

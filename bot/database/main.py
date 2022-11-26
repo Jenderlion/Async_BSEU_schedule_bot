@@ -43,6 +43,7 @@ class User(Base):
     b_form = Column(VARCHAR(16), default=None)  # BSEU form
     b_course = Column(VARCHAR(16), default=None)  # BSEU course
     b_group = Column(VARCHAR(16), default=None)  # BSEU group
+    settings = Column(TEXT, default=None)  # schedule settings
 
     def __repr__(self):
         return f'<User> ID: {self.tg_user_id} UName: {self.tg_user_name}'
