@@ -31,6 +31,11 @@ async def send_broadcast(broadcast_text: str):
 
 
 async def schedule_request(user: User, message: Message, period: str = '3'):
+    if period == '2-2':
+        period = '2'
+        _tomorrow = True
+    else:
+        _tomorrow = False
     request_url = 'http://bseu.by/schedule/'
     if user.is_full() is None:
         await message.answer('Чтобы выполнить эту команду, я должен знать всё о тебе (или, хотя бы, группу).'
@@ -51,6 +56,8 @@ async def schedule_request(user: User, message: Message, period: str = '3'):
         __table = result[result.find('<tr>'):]
         __table = __table[:__table.find('</table')]
         table = ScheduleTable(__table, period)
+        if _tomorrow:
+            table.days = [table.days[1], ]
         for day in table.days:
             answer_text_list = [
                 f'Расписание на {day.pretty_date()}, {day.week_day} (всего занятий: {len(day.lessons)})',

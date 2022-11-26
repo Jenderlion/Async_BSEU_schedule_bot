@@ -10,6 +10,7 @@ from misc.async_utils import schedule_request
 from misc.async_utils import voice_handler as v_h
 from keyboards.inline import inline_markup_add_group_info
 from keyboards.inline import inline_markup_credentials
+from keyboards.inline import inline_markup_hide_schedule
 
 
 logger = logging.getLogger('BSEU Schedule')
@@ -66,11 +67,32 @@ async def callback_schedule(*args, **kwargs):
     callback: types.CallbackQuery = args[0]
     bot_message: types.Message = callback.message
     callback_tuple = callback.data.split()
-    if callback_tuple[1] in ('1', '2', '3'):
+    if callback_tuple[1] in ('1', '2', '2-2', '3'):
         user = get_user(callback.from_user.id)
         await schedule_request(user, bot_message, callback_tuple[1])
         return None
-    await bot_message.answer('От тебя приходят странные данные. Ты их не менял?')
+    await bad_data_message(bot_message)
+
+
+@callback_wrapper
+async def callback_hide_schedule(*args, **kwargs):
+    callback: types.CallbackQuery = args[0]
+    bot_message: types.Message = callback.message
+    callback_tuple = callback.data.split()
+    if callback_tuple[1] in ('today', 'tomorrow', 'week', 'all'):
+        _param = callback_tuple[1]
+        _value = callback_tuple[2]
+        if _value in ('0', '1'):
+            _value = int(_value)
+            user = get_user(callback.from_user.id)
+            _settings = json.loads(user.settings)
+            _settings[_param] = _value
+            update_user_info(callback.from_user.id, {'settings': json.dumps(_settings)})
+            await bot_message.answer('Отображаемые варианты изменены!')
+        else:
+            await bad_data_message(bot_message)
+    else:
+        await bad_data_message(bot_message)
 
 
 @callback_wrapper
@@ -101,10 +123,13 @@ async def callback_settings(*args, **kwargs):
             user = get_user(callback.from_user.id)
             text, markup = inline_markup_add_group_info(user)
             await bot_message.answer(text, reply_markup=markup)
+        case 'schedule':
+            user = get_user(callback.from_user.id)
+            await bot_message.answer('Что хочешь изменить?', reply_markup=inline_markup_hide_schedule(user))
         case 'cancel':
             pass
         case _:
-            await bot_message.answer('От тебя приходят странные данные. Ты их не менял?')
+            await bad_data_message(bot_message)
 
 
 @callback_wrapper
@@ -141,7 +166,11 @@ async def callback_help(*args, **kwargs):
                                      'ETH (сеть <u>ERC20</u>): 0x6b4c1924fb6d8d0d1d919357bdc7f6952ee753d6\n'
                                      'BTC (сеть <u>Bitcoin</u>): 3LgofPSzhWPGY89MxVmfS555S6qRi3PhHZ')
         case _:
-            await bot_message.answer('От тебя приходят странные данные. Ты их не менял?')
+            await bad_data_message(bot_message)
+
+
+async def bad_data_message(bot_message: types.Message):
+    await  bot_message.answer('От тебя приходят странные данные. Ты их не менял(а)?')
 
 
 def register_other_handlers(dp: Dispatcher) -> None:
@@ -156,6 +185,7 @@ def register_other_handlers(dp: Dispatcher) -> None:
 
     dp.register_callback_query_handler(callback_group_info, lambda c: c.data.split()[0] == 'group_info')
     dp.register_callback_query_handler(callback_schedule, lambda c: c.data.split()[0] == 'schedule')
+    dp.register_callback_query_handler(callback_hide_schedule, lambda c: c.data.split()[0] == 'hide_schedule')
     dp.register_callback_query_handler(callback_settings, lambda c: c.data.split()[0] == 'settings')
     dp.register_callback_query_handler(callback_help, lambda c: c.data.split()[0] == 'help')
     dp.register_callback_query_handler(callback__, lambda c: True)

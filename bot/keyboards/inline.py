@@ -1,3 +1,5 @@
+import json
+
 import requests
 from lxml import html
 from functools import cache
@@ -95,9 +97,42 @@ def inline_markup_settings(user: User) -> InlineKeyboardMarkup:
         callback_data='settings group')
     )
     keyboard.row(InlineKeyboardButton(
+        f'Изменить скрытые варианты расписания',
+        callback_data='settings schedule')
+    )
+    keyboard.row(InlineKeyboardButton(
         f'Ничего не делать',
         callback_data='settings cancel')
     )
+    return keyboard
+
+
+def inline_markup_hide_schedule(user: User) -> InlineKeyboardMarkup:
+    keyboard = InlineKeyboardMarkup()
+    _d_dict = {'today': 'на сегодня', 'tomorrow': 'на завтра', 'week': 'на неделю', 'all': 'на семестр'}
+    to_show = []
+    hidden = []
+    for param_name, param_value in json.loads(user.settings).items():
+        if param_value == 1:
+            to_show.append(param_name)
+        else:
+            hidden.append(param_name)
+    if to_show:
+        for _param in to_show:
+            keyboard.row(
+                InlineKeyboardButton(
+                    f'Скрыть "Расписание {_d_dict[_param]}"',
+                    callback_data=f'hide_schedule {_param} 0'
+                )
+            )
+    if hidden:
+        for _param in hidden:
+            keyboard.row(
+                InlineKeyboardButton(
+                    f'Отобразить "Расписание {_d_dict[_param]}"',
+                    callback_data=f'hide_schedule {_param} 1'
+                )
+            )
     return keyboard
 
 
@@ -116,12 +151,35 @@ def inline_markup_credentials(__target_id: int | str) -> InlineKeyboardMarkup:
 
 
 @cache
-def inline_markup_schedule() -> InlineKeyboardMarkup:
-    keyboard = InlineKeyboardMarkup()
-    keyboard.row(InlineKeyboardButton(f'Расписание на сегодня', callback_data='schedule 1'))
-    keyboard.row(InlineKeyboardButton(f'Расписание на неделю', callback_data='schedule 2'))
-    keyboard.row(InlineKeyboardButton(f'Расписание на семестр', callback_data='schedule 3'))
-    return keyboard
+def inline_markup_schedule(user: User) -> tuple[InlineKeyboardMarkup | None, str | None]:
+    _settings: dict = json.loads(user.settings)
+    to_show = []
+    hidden = []
+    for param_name, param_value in _settings.items():
+        if param_value == 1:
+            to_show.append(param_name)
+        else:
+            hidden.append(param_name)
+
+    if to_show:
+        keyboard = InlineKeyboardMarkup()
+        _buttons_dict = {
+            'today': InlineKeyboardButton(f'Расписание на сегодня', callback_data='schedule 1'),
+            'tomorrow': InlineKeyboardButton(f'Расписание на завтра', callback_data='schedule 2-2'),
+            'week': InlineKeyboardButton(f'Расписание на неделю', callback_data='schedule 2'),
+            'all': InlineKeyboardButton(f'Расписание на семестр', callback_data='schedule 3'),
+        }
+        for _var in to_show:
+            keyboard.row(_buttons_dict[_var])
+    else:
+        keyboard = None
+
+    if hidden:
+        mes = 'Некоторые варианты скрыты. Чтобы их отобразить, введи /settings или "Настройки"'
+    else:
+        mes = 'Отображены все варианты. Чтобы скрыть часть из них, введи /settings или "Настройки"'
+
+    return keyboard, mes
 
 
 def base_markup() -> InlineKeyboardMarkup:
