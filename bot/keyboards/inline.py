@@ -3,6 +3,7 @@ import json
 import requests
 from lxml import html
 from functools import cache
+from lxml.html import HtmlElement
 
 from aiogram.types import InlineKeyboardButton
 from aiogram.types import InlineKeyboardMarkup
@@ -27,9 +28,15 @@ def inline_markup_add_group_info(user: User) -> tuple[str, InlineKeyboardMarkup]
     try:
         if user.b_faculty is None:
             resp = requests.get('http://bseu.by/schedule/', timeout=5)
-            html_mash = html.fromstring(resp.content)
-            answer = html_mash.xpath('//*[@id="faculty"]//option')
-            faculties = [(item.values()[0], item.text) for item in answer if item.text != ' ']
+            __trigger = '<select size="0" name="faculty" id="faculty"  class="idnt20"><option value="-1"> </option>'
+            __trigger_len = len(__trigger)
+            raw_text = resp.text
+            raw_table = raw_text[raw_text.find(__trigger) + __trigger_len + 2:]
+            raw_table = raw_table[:raw_table.find('</select>')].split('\n')
+            faculties = [
+                (item[item.find('e="') + 3:item.find('">')], item[item.find('">') + 2:item.find('</')])
+                for item in raw_table if item != ''
+            ]
             text = 'Выбери факультет:'
 
             for faculty in faculties:
