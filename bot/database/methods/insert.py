@@ -38,6 +38,7 @@ def add_user(message: Message, engine: ConnectedEngine = None) -> User:
                 tg_user_name=__username,
                 tg_first_name=__first_name,
                 tg_last_name=__last_name,
+                settings='{"today": 1, "tomorrow": 1, "week": 1, "all": 1}',
             )
             __session.add(__new_user)
             __session.flush()
